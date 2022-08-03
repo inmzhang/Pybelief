@@ -1,6 +1,14 @@
 #pragma once
 #include "graph.hpp"
-#include <tuple>
+
+struct Result
+{
+    bool converged;
+    std::vector<double> posterior_probs;
+    std::vector<int> hard_decisions;
+
+};
+
 
 class BeliefPropagation
 {
@@ -18,5 +26,5 @@ public:
     std::vector<double> soft_decision();
     std::vector<int> hard_decision();
     bool converge(std::vector<int> &syndromes);
-    std::tuple<bool, std::vector<double>, std::vector<int>> decode(std::vector<int> &syndromes);
+    Result decode(std::vector<int> &syndromes);
 };

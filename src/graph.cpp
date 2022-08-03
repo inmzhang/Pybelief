@@ -2,7 +2,6 @@
 
 #include <numeric>
 #include <stdexcept>
-#include <iostream>
 
 void CNode::register_neighbor(VNode* neighbor)
 {   

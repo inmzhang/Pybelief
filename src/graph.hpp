@@ -2,7 +2,6 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <functional>
 #include <set>
 #include <utility>
 #include <cmath>

@@ -55,7 +55,7 @@ bool BeliefPropagation::converge(std::vector<int> &syndromes)
     return true;
 }
 
-std::tuple<bool, std::vector<double>, std::vector<int>> BeliefPropagation::decode(std::vector<int> &syndromes)
+Result BeliefPropagation::decode(std::vector<int> &syndromes)
 {
     // Initialize
     for (auto &vnode : graph.v_nodes)
@@ -110,6 +110,6 @@ std::tuple<bool, std::vector<double>, std::vector<int>> BeliefPropagation::decod
         }
     }
     soft_probs = soft_decision();
-    std::tuple<bool, std::vector<double>, std::vector<int>> ret = {converged, soft_probs, hard_decisions};
-    return ret;
+    Result res = {converged, soft_probs, hard_decisions}; 
+    return res;
 }
