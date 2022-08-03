@@ -87,14 +87,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/h/Belief_Propagation/CMakeFiles /mnt/h/Belief_Propagation//CMakeFiles/progress.marks
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
+	cd /mnt/h/Belief_Propagation && $(CMAKE_COMMAND) -E cmake_progress_start /mnt/h/Belief_Propagation/CMakeFiles /mnt/h/Belief_Propagation/src//CMakeFiles/progress.marks
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/h/Belief_Propagation/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 clean
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/clean
 .PHONY : clean
 
 # The main clean target
@@ -103,68 +103,80 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /mnt/h/Belief_Propagation && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-#=============================================================================
-# Target rules for targets named main
+# Convenience name for target.
+src/CMakeFiles/BeliefPropagation.dir/rule:
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/BeliefPropagation.dir/rule
+.PHONY : src/CMakeFiles/BeliefPropagation.dir/rule
 
-# Build rule for target.
-main: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 main
-.PHONY : main
-
-# fast build rule for target.
-main/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
-.PHONY : main/fast
-
-#=============================================================================
-# Target rules for targets named BeliefPropagation
-
-# Build rule for target.
-BeliefPropagation: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 BeliefPropagation
+# Convenience name for target.
+BeliefPropagation: src/CMakeFiles/BeliefPropagation.dir/rule
 .PHONY : BeliefPropagation
 
 # fast build rule for target.
 BeliefPropagation/fast:
-	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/BeliefPropagation.dir/build.make src/CMakeFiles/BeliefPropagation.dir/build
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/BeliefPropagation.dir/build.make src/CMakeFiles/BeliefPropagation.dir/build
 .PHONY : BeliefPropagation/fast
 
-main.o: main.cpp.o
-.PHONY : main.o
+belief_propagation.o: belief_propagation.cpp.o
+.PHONY : belief_propagation.o
 
 # target to build an object file
-main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.cpp.o
-.PHONY : main.cpp.o
+belief_propagation.cpp.o:
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/BeliefPropagation.dir/build.make src/CMakeFiles/BeliefPropagation.dir/belief_propagation.cpp.o
+.PHONY : belief_propagation.cpp.o
 
-main.i: main.cpp.i
-.PHONY : main.i
+belief_propagation.i: belief_propagation.cpp.i
+.PHONY : belief_propagation.i
 
 # target to preprocess a source file
-main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.cpp.i
-.PHONY : main.cpp.i
+belief_propagation.cpp.i:
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/BeliefPropagation.dir/build.make src/CMakeFiles/BeliefPropagation.dir/belief_propagation.cpp.i
+.PHONY : belief_propagation.cpp.i
 
-main.s: main.cpp.s
-.PHONY : main.s
+belief_propagation.s: belief_propagation.cpp.s
+.PHONY : belief_propagation.s
 
 # target to generate assembly for a file
-main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.cpp.s
-.PHONY : main.cpp.s
+belief_propagation.cpp.s:
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/BeliefPropagation.dir/build.make src/CMakeFiles/BeliefPropagation.dir/belief_propagation.cpp.s
+.PHONY : belief_propagation.cpp.s
+
+graph.o: graph.cpp.o
+.PHONY : graph.o
+
+# target to build an object file
+graph.cpp.o:
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/BeliefPropagation.dir/build.make src/CMakeFiles/BeliefPropagation.dir/graph.cpp.o
+.PHONY : graph.cpp.o
+
+graph.i: graph.cpp.i
+.PHONY : graph.i
+
+# target to preprocess a source file
+graph.cpp.i:
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/BeliefPropagation.dir/build.make src/CMakeFiles/BeliefPropagation.dir/graph.cpp.i
+.PHONY : graph.cpp.i
+
+graph.s: graph.cpp.s
+.PHONY : graph.s
+
+# target to generate assembly for a file
+graph.cpp.s:
+	cd /mnt/h/Belief_Propagation && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/BeliefPropagation.dir/build.make src/CMakeFiles/BeliefPropagation.dir/graph.cpp.s
+.PHONY : graph.cpp.s
 
 # Help Target
 help:
@@ -175,10 +187,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... BeliefPropagation"
-	@echo "... main"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
+	@echo "... belief_propagation.o"
+	@echo "... belief_propagation.i"
+	@echo "... belief_propagation.s"
+	@echo "... graph.o"
+	@echo "... graph.i"
+	@echo "... graph.s"
 .PHONY : help
 
 
@@ -190,6 +204,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /mnt/h/Belief_Propagation && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

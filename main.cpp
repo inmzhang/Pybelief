@@ -1,4 +1,4 @@
-#include "belief_propagation.hpp"
+#include "src/belief_propagation.hpp"
 #include <iostream>
 // #include "graph.hpp"
 
