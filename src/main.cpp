@@ -7,7 +7,7 @@ int main()
 	std::vector<std::vector<int>> H{{1, 1, 0}, {0, 1, 1}};
 	std::vector<double> prior_probs{0.3, 0.3, 0.3};
 	std::vector<int> syndromes{0, 1};
-	int max_iter = 3;
+	int max_iter = 5;
 	bool parallel = false;
 
 	auto bp_decoder = BeliefPropagation(H, prior_probs, max_iter, parallel);
