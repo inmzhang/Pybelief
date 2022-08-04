@@ -1,0 +1,12 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/mnt/c/Users/Administrator/Documents/Github/Belief_Propagation'
+ 
+mkdir -p output
+ 
+g++ -std=c++17 -Wall -Wextra -g -Iinclude -c src/belief_propagation.cpp  -o src/belief_propagation.o
+g++ -std=c++17 -Wall -Wextra -g -Iinclude -c src/graph.cpp  -o src/graph.o
+g++ -std=c++17 -Wall -Wextra -g -Iinclude -c src/main.cpp  -o src/main.o
+g++ -std=c++17 -Wall -Wextra -g -Iinclude -o output/main src/belief_propagation.o src/graph.o src/main.o  -Llib
+echo Executing 'all' complete!
+make: Leaving directory '/mnt/c/Users/Administrator/Documents/Github/Belief_Propagation'
+ 
