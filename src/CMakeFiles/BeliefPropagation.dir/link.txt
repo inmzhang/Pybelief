@@ -1,2 +1,0 @@
-/usr/bin/ar qc libBeliefPropagation.a CMakeFiles/BeliefPropagation.dir/belief_propagation.cpp.o CMakeFiles/BeliefPropagation.dir/graph.cpp.o
-/usr/bin/ranlib libBeliefPropagation.a
