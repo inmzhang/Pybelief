@@ -1,127 +1,286 @@
 #include "belief_propagation.hpp"
+#include <cmath>
 
-Result::Result(){};
-
-Result::Result(bool converged, std::vector<double> posterior_probs, std::vector<int> hard_decisions) : converged(converged), posterior_probs(posterior_probs), hard_decisions(hard_decisions) {}
-
-BeliefPropagation::BeliefPropagation(){};
+BPResult::BPResult(bool converged, std::vector<double> &posterior_probs, std::vector<int> &hard_decisions) : converged(converged), posterior_probs(posterior_probs), hard_decisions(hard_decisions) {}
 
 BeliefPropagation::BeliefPropagation(
     py::array_t<std::uint8_t> &parity_check_matrix,
     py::array_t<double> &prior_probs,
-    int &max_iter,
-    bool &parallel) : parity_check_matrix{parity_check_matrix},
-                      prior_probs{prior_probs},
-                      max_iter{max_iter},
-                      parallel{parallel}
+    int max_iter,
+    int method,
+    double scale) : parity_check_matrix{parity_check_matrix},
+                    prior_probs{prior_probs},
+                    max_iter{max_iter},
+                    method{method},
+                    scale{scale}
 {
     graph.from_parity_check_matrix(parity_check_matrix, prior_probs);
+    syndromes.resize(graph.num_rows);
+    soft_probs.resize(graph.num_cols);
+    hard_decisions.resize(graph.num_cols);
 }
 
-std::vector<double> BeliefPropagation::soft_decision()
-{
-    std::vector<double> decisions;
-    for (auto &vnode : graph.v_nodes)
-    {
-        decisions.push_back(vnode.second.estimate());
-    }
-    return decisions;
-}
-
-int hard(double prob)
-{
-    return prob > 0 ? 0 : 1;
-}
-
-std::vector<int> BeliefPropagation::hard_decision()
-{
-    std::vector<int> decisions;
-    for (auto &vnode : graph.v_nodes)
-    {
-        decisions.push_back(hard(vnode.second.estimate()));
-    }
-    return decisions;
-}
-
-bool BeliefPropagation::converge()
-{
-    for (auto &cnode : graph.c_nodes)
-    {
-        int check = syndromes[cnode.first];
-        for (auto &vnode : cnode.second.neighbors)
-        {
-            check ^= hard_decisions[vnode.first];
-        }
-        if (check)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-Result BeliefPropagation::decode(const py::array_t<std::uint8_t> &syndromes_)
+BPResult BeliefPropagation::decode(const py::array_t<std::uint8_t> &syndromes_)
 {
     // Set syndromes
     auto s = syndromes_.unchecked<1>();
-    syndromes.clear();
     for (int i = 0; i < s.shape(0); i++)
     {
-        syndromes.push_back(s(i));
+        syndromes[i] = s(i);
     }
 
     // Initialize
-    for (auto &vnode : graph.v_nodes)
+    for (int j = 0; j < graph.num_cols; j++)
     {
-        vnode.second.initialize();
-    }
-    for (auto &cnode : graph.c_nodes)
-    {
-        cnode.second.set_syndrome(syndromes[cnode.first]);
-        cnode.second.initialize();
-    }
-
-    bool converged = false;
-
-    for (int i = 0; i < max_iter; i++)
-    {
-        // Parallel schedule
-        if (parallel)
+        Node *node = graph.first_in_col(j);
+        while (node)
         {
-            for (auto &cnode : graph.c_nodes)
-            {
-                cnode.second.receive_messages();
-            }
+            double p = graph.prior_probs[j];
+            node->bit_to_check = std::log((1 - p) / (p));
+            node = node->next_in_col;
+        }
+    }
 
-            for (auto &vnode : graph.v_nodes)
-            {
-                vnode.second.receive_messages();
-            }
+    bool converged = true;
+    double alpha;
+    // Message passing
+    for (int iter = 1; iter <= max_iter; iter++)
+    {
+        // ms scaling factor, used in min-sum
+        if (scale == 0)
+        {
+            alpha = 1.0 - std::pow(2, -1 * iter);
         }
         else
-        // Serial schedule
         {
-            for (auto &vnode : graph.v_nodes)
+            alpha = scale;
+        }
+
+        // parallel schedule
+        if ((method == 1) || (method == 2))
+        {
+            /* check to bit messages */
+            // product-sum rule
+            if (method == 1)
             {
-                for (auto &neighbor : vnode.second.neighbors)
+                for (int i = 0; i < graph.num_rows; i++)
                 {
-                    neighbor.second->receive_messages();
+                    Node *node = graph.first_in_row(i);
+                    double temp = 1.0;
+                    while (node)
+                    {
+                        node->check_to_bit = temp;
+                        temp *= std::tanh(node->bit_to_check / 2);
+                        node = node->next_in_row;
+                    }
+
+                    node = graph.last_in_row(i);
+                    temp = 1.0;
+                    while (node)
+                    {
+                        node->check_to_bit *= temp;
+                        node->check_to_bit = std::pow(-1, syndromes[i]) * std::log((1 + node->check_to_bit) / (1 - node->check_to_bit));
+                        temp *= std::tanh(node->bit_to_check / 2);
+                        node = node->prev_in_row;
+                    }
+                }
+            }
+            // min-sum rule
+            else
+            {
+                for (int i = 0; i < graph.num_rows; i++)
+                {
+                    Node *node = graph.first_in_row(i);
+                    double temp = 1e308;
+                    int sign = 0;
+                    if (syndromes[i] == 1)
+                    {
+                        sign = 1;
+                    }
+                    while (node)
+                    {
+                        node->check_to_bit = temp;
+                        node -> sgn = sign;
+                        if (std::abs(node->bit_to_check) < temp)
+                        {
+                            temp = std::abs(node->bit_to_check);
+                        }
+                        if (node->bit_to_check <= 0)
+                        {
+                            sign += 1;
+                        }
+                        node = node->next_in_row;
+                    }
+                    node = graph.last_in_row(i);
+                    temp = 1e308;
+                    sign = 0;
+                    while (node)
+                    {
+                        if (temp < std::abs(node->check_to_bit))
+                        {
+                            node->check_to_bit = temp;
+                        }
+                        node->sgn += sign;
+                        node->check_to_bit *= (std::pow(-1, node->sgn) * alpha);
+                        if (std::abs(node->bit_to_check) < temp)
+                        {
+                            temp = std::abs(node->bit_to_check);
+                        }
+                        if (node->bit_to_check <= 0)
+                        {
+                            sign += 1;
+                        }
+                        node = node->prev_in_row;
+                    }
+                }
+            }
+            /* bit to check messages */
+            for (int j = 0; j < graph.num_cols; j++)
+            {
+                Node *node = graph.first_in_col(j);
+                double p = graph.prior_probs[j];
+                double temp = std::log((1 - p) / (p));
+
+                while (node)
+                {
+                    node->bit_to_check = temp;
+                    temp += node->check_to_bit;
+                    node = node->next_in_col;
                 }
 
-                vnode.second.receive_messages();
+                soft_probs[j] = temp;
+                if (temp <= 0)
+                {
+                    hard_decisions[j] = 1;
+                }
+                else
+                {
+                    hard_decisions[j] = 0;
+                }
+
+                node = graph.last_in_col(j);
+                temp = 0.0;
+                while (node)
+                {
+                    node->bit_to_check += temp;
+                    temp += node->check_to_bit;
+                    node = node->prev_in_col;
+                }
+            }
+        }
+        // serial schedule
+        else
+        {
+            for (int j = 0; j < graph.num_cols; j++)
+            {
+                /* check to bit messages */
+
+                Node *node = graph.first_in_col(j);
+                double temp;
+                // product-sum rule
+                if (method == 3)
+                {
+                    while (node)
+                    {
+                        Node *g = graph.first_in_row(node->row);
+                        temp = 1.0;
+                        while (g)
+                        {
+                            if (g->col != j)
+                            {
+                                temp *= std::tanh(g->bit_to_check / 2);
+                            }
+                            g = g->next_in_row;
+                        }
+                        node->check_to_bit = (std::pow(-1, syndromes[node->row]) * std::log((1 + temp) / (1 - temp)));
+                        node = node->next_in_col;
+                    }
+                }
+                // min-sum rule
+                else
+                {
+                    while (node)
+                    {
+                        Node *g = graph.first_in_row(node->row);
+                        temp = 1e308;
+                        int sign = 0;
+                        if (syndromes[node->row] == 1)
+                        {
+                            sign = 1;
+                        }
+                        while (g)
+                        {
+                            if (g->col != j)
+                            {
+                                if (std::abs(g->bit_to_check) < temp)
+                                {
+                                    temp = std::abs(g->bit_to_check);
+                                }
+                                if (g->bit_to_check <= 0)
+                                {
+                                    sign += 1;
+                                }
+                            }
+                            g = g->next_in_row;
+                        }
+                        node->check_to_bit = (std::pow(-1, sign) * temp * alpha);
+                        node = node->next_in_col;
+                    }
+                }
+                /* bit to check messages */
+                node = graph.first_in_col(j);
+                double p = graph.prior_probs[j];
+                temp = std::log((1 - p) / (p));
+
+                while (node)
+                {
+                    node->bit_to_check = temp;
+                    temp += node->check_to_bit;
+                    node = node->next_in_col;
+                }
+
+                soft_probs[j] = temp;
+                if (temp <= 0)
+                {
+                    hard_decisions[j] = 1;
+                }
+                else
+                {
+                    hard_decisions[j] = 0;
+                }
+
+                node = graph.last_in_col(j);
+                temp = 0.0;
+                while (node)
+                {
+                    node->bit_to_check += temp;
+                    temp += node->check_to_bit;
+                    node = node->prev_in_col;
+                }
             }
         }
 
-        // Hard decision
-        hard_decisions = hard_decision();
-        // Converge test
-        converged = converge();
+        // Check for convergence
+        for (int i = 0; i < graph.num_rows; i++)
+        {
+            int sign = syndromes[i];
+            Node *node = graph.first_in_row(i);
+            while (node)
+            {
+                sign += hard_decisions[node->col];
+                node = node -> next_in_row;
+            }
+            if ((sign % 2) == 1)
+            {
+                converged = false;
+                break;
+            }
+        }
         if (converged)
         {
             break;
         }
     }
-    soft_probs = soft_decision();
-    Result res(converged, soft_probs, hard_decisions);
+    BPResult res(converged, soft_probs, hard_decisions);
     return res;
 }

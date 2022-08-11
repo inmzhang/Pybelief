@@ -1,187 +1,82 @@
 #include "graph.hpp"
-#include <numeric>
-#include <stdexcept>
 
-void CNode::register_neighbor(VNode *neighbor)
-{
-    neighbors[neighbor->id] = neighbor;
-}
+Node::Node(int row, int col) : row(row), col(col) {}
 
-std::vector<int> CNode::get_neighbors()
-{
-    std::vector<int> ns;
-    for (auto &neighbor : neighbors)
-    {
-        ns.push_back(neighbor.first);
-    }
-    return ns;
-}
+Node *Graph::first_in_row(int row) { return _first_in_row[row]; }
 
-void CNode::receive_messages()
-{
-    for (auto &neighbor : neighbors)
-    {
-        received_messages[neighbor.first] = neighbor.second->message(id);
-    }
-}
+Node *Graph::first_in_col(int col) { return _first_in_col[col]; }
 
-void CNode::initialize()
-{
-    for (auto &neighbor : neighbors)
-    {
-        received_messages[neighbor.first] = 0;
-    }
-}
+Node *Graph::last_in_row(int row) { return _last_in_row[row]; }
 
-CNode::CNode(int id) : id(id) {}
+Node *Graph::last_in_col(int col) { return _last_in_col[col]; }
 
-void CNode::set_syndrome(int syndrome)
-{
-    this->syndrome = syndrome;
-}
-
-double phi(double x)
-{
-    return -std::log((std::tanh(x) / 2));
-}
-
-double CNode::message(int requester_id)
-{
-    std::vector<double> messages;
-    int sign = std::pow(-1, syndrome);
-    for (auto &msg : received_messages)
-    {
-        if (msg.first != requester_id)
-        {
-            double m = msg.second;
-            sign = std::copysign(1, m * sign);
-            messages.push_back(phi(std::abs(m)));
-        }
-    }
-
-    return sign * phi(std::accumulate(messages.begin(), messages.end(), 0.0));
-}
-
-VNode::VNode(int id, double prior_prob)
-{
-    this->id = id;
-    this->prior_prob = prior_prob;
-    this->prior_llr = std::log((1 - prior_prob) / prior_prob);
-}
-
-void VNode::register_neighbor(CNode *neighbor)
-{
-    neighbors[neighbor->id] = neighbor;
-}
-
-std::vector<int> VNode::get_neighbors()
-{
-    std::vector<int> ns;
-    for (auto &neighbor : neighbors)
-    {
-        ns.push_back(neighbor.first);
-    }
-    return ns;
-}
-
-void VNode::initialize()
-{
-    for (auto &neighbor : neighbors)
-    {
-        received_messages[neighbor.first] = 0;
-    }
-}
-
-double VNode::message(int requester_id)
-{
-    std::vector<double> messages;
-    for (auto &m : received_messages)
-    {
-        if (m.first != requester_id)
-        {
-            messages.push_back(m.second);
-        }
-    }
-    return prior_llr + std::accumulate(messages.begin(), messages.end(), 0.0);
-}
-
-void VNode::receive_messages()
-{
-    for (auto &neighbor : neighbors)
-    {
-        received_messages[neighbor.first] = neighbor.second->message(id);
-    }
-}
-
-double VNode::estimate()
-{
-    double sum = prior_llr;
-    for (auto &msg : received_messages)
-    {
-        sum += msg.second;
-    }
-    return sum;
-}
-
-void TannerGraph::add_cnode()
-{
-    int i = num_cnodes++;
-    CNode node(i);
-    c_nodes[i] = node;
-}
-
-void TannerGraph::add_vnode(double prior_prob)
-{
-    int id = num_vnodes++;
-    VNode node(id, prior_prob);
-    v_nodes[id] = node;
-}
-
-void TannerGraph::add_edge(int vnode_id, int cnode_id)
-{
-    auto searchv = v_nodes.find(vnode_id);
-    if (searchv == v_nodes.end())
-    {
-        throw std::invalid_argument("VNode not found");
-    }
-    auto searchc = c_nodes.find(cnode_id);
-    if (searchc == c_nodes.end())
-    {
-        throw std::invalid_argument("CNode not found");
-    }
-
-    searchv->second.register_neighbor(&searchc->second);
-    searchc->second.register_neighbor(&searchv->second);
-
-    edges.insert(std::make_pair(vnode_id, cnode_id));
-}
-
-void TannerGraph::from_parity_check_matrix(py::array_t<std::uint8_t> &parity_check_matrix, py::array_t<double> &prior_probs)
+void Graph::from_parity_check_matrix(py::array_t<std::uint8_t> &parity_check_matrix, py::array_t<double> &prior_probs_)
 {
     auto mat = parity_check_matrix.unchecked<2>();
-    auto prior = prior_probs.unchecked<1>();
+    auto prior = prior_probs_.unchecked<1>();
     // add nodes
     int nc = mat.shape(0);
     int nv = mat.shape(1);
-    for (int i = 0; i < nc; i++)
+    num_rows = nc;
+    num_cols = nv;
+    _first_in_row.resize(num_rows);
+    _first_in_col.resize(num_cols);
+    _last_in_row.resize(num_rows);
+    _last_in_col.resize(num_cols);
+    Nodes.resize(nc);
+    Node *prev;
+    for (int j = 0; j < nv; j++)
     {
-        add_cnode();
-    }
-
-    for (int i = 0; i < nv; i++)
-    {
-        add_vnode(prior(i));
-    }
-
-    // add edges
-    for (int row = 0; row < nc; row++)
-    {
-        for (int col = 0; col < nv; col++)
+        int first_in_col_ = true;
+        for (int i = 0; i < nc; i++)
         {
-            if (mat(row, col) == 1)
+            if (mat(i, j) == 1)
             {
-                add_edge(col, row);
+                auto current = new Node(i, j);
+                Nodes[i].push_back(current);
+                if (first_in_col_)
+                {
+                    first_in_col_ = false;
+                    current->prev_in_col = nullptr;
+                    _first_in_col[j] = current;
+                }
+                else
+                {
+                    prev->next_in_col = current;
+                    current->prev_in_col = prev;
+                }
+                prev = current;
             }
         }
+        prev->next_in_col = nullptr;
+        _last_in_col[j] = prev;
+    }
+
+    for (int r = 0; r < nc; r++)
+    {
+        for (auto iter = Nodes[r].begin(); iter != Nodes[r].end(); iter++)
+        {
+            Node *current = *iter;
+            if (iter == Nodes[r].begin())
+            {
+                current->prev_in_row = nullptr;
+                _first_in_row[r] = current;
+            }
+            else
+            {
+                prev->next_in_row = current;
+                current->prev_in_row = prev;
+            }
+            prev = current;
+        }
+        prev->next_in_row = nullptr;
+        _last_in_row[r] = prev;
+    }
+
+    // set prior probs
+    int l = prior.shape(0);
+    for (int i = 0; i < l; i++)
+    {
+        prior_probs.push_back(prior(i));
     }
 }

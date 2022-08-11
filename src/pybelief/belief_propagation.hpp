@@ -6,10 +6,9 @@
 
 namespace py = pybind11;
 
-struct Result
+struct BPResult
 {
-    Result();
-    Result(bool converged, std::vector<double> posterior_probs, std::vector<int> hard_decisions);
+    BPResult(bool converged, std::vector<double> &posterior_probs, std::vector<int> &hard_decisions);
     bool converged;
     std::vector<double> posterior_probs;
     std::vector<int> hard_decisions;
@@ -18,22 +17,18 @@ struct Result
 class BeliefPropagation
 {
 public:
-    TannerGraph graph;
+    Graph graph;
     py::array_t<std::uint8_t> parity_check_matrix;
     py::array_t<double> prior_probs;
     int max_iter;
-    bool parallel;
+    int method;
+    double scale;
 
-    BeliefPropagation();
-    BeliefPropagation(py::array_t<std::uint8_t> &parity_check_matrix, py::array_t<double> &prior_probs, int &max_iter, bool &parallel);
+    BeliefPropagation(py::array_t<std::uint8_t> &parity_check_matrix, py::array_t<double> &prior_probs, int max_iter, int method, double scale);
 
-    Result decode(const py::array_t<std::uint8_t> &syndromes_);
+    BPResult decode(const py::array_t<std::uint8_t> &syndromes_);
 
-private:
     std::vector<int> syndromes;
     std::vector<double> soft_probs;
     std::vector<int> hard_decisions;
-    std::vector<double> soft_decision();
-    std::vector<int> hard_decision();
-    bool converge();
 };

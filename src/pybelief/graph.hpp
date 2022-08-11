@@ -1,67 +1,43 @@
 #pragma once
-#include <map>
-#include <string>
 #include <vector>
-#include <set>
-#include <utility>
-#include <cmath>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 
 namespace py = pybind11;
 
-class CNode;
-class VNode;
-
-class CNode
+class Node 
 {
 public:
-    int id;
-    int syndrome = 0;
-    std::map<int, VNode *> neighbors;
-    std::map<int, double> received_messages;
-
-    CNode() {}
-    CNode(int id);
-    void set_syndrome(int syndrome);
-    void register_neighbor(VNode *neighbor);
-    std::vector<int> get_neighbors();
-    void receive_messages();
-    double message(int requester_id);
-    void initialize();
+    int row;
+    int col;
+    Node *next_in_row;
+    Node *prev_in_row;
+    Node *next_in_col;
+    Node *prev_in_col;
+    double bit_to_check;
+    double check_to_bit;
+    int sgn;
+    
+    Node(int row, int col);
 };
 
-class VNode
+
+class Graph
 {
 public:
-    int id;
-    std::map<int, CNode *> neighbors;
-    std::map<int, double> received_messages;
+    int num_rows;
+    int num_cols;
+    std::vector<std::vector<Node*>> Nodes;
+    std::vector<double> prior_probs;
+    std::vector<Node*> _first_in_row;
+    std::vector<Node*> _first_in_col;
+    std::vector<Node*> _last_in_row;
+    std::vector<Node*> _last_in_col;
 
-    VNode() {}
-    VNode(int id, double prior_prob);
-    double prior_prob;
-    double prior_llr;
-    double estimate();
-    void register_neighbor(CNode *neighbor);
-    std::vector<int> get_neighbors();
-    void receive_messages();
-    double message(int requester_id);
-    void initialize();
-};
+    Node *first_in_row(int row);
+    Node *first_in_col(int col);
+    Node *last_in_row(int row);
+    Node *last_in_col(int col);
 
-class TannerGraph
-{
-public:
-    TannerGraph() {}
-    std::map<int, CNode> c_nodes;
-    std::map<int, VNode> v_nodes;
-    std::set<std::pair<int, int>> edges;
-    int num_vnodes = 0;
-    int num_cnodes = 0;
-
-    void add_vnode(double prior_prob);
-    void add_cnode();
-    void add_edge(int vnode_id, int cnode_id);
     void from_parity_check_matrix(py::array_t<std::uint8_t> &parity_check_matrix, py::array_t<double> &prior_probs);
 };
