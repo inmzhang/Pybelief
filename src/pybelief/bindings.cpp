@@ -15,8 +15,8 @@ PYBIND11_MODULE(_cpp_bp, m)
         .def_readwrite("hard_decisions", &BPResult::hard_decisions);
 
     py::class_<BeliefPropagation>(m, "BeliefPropagation", u8R"(Belief propagation algorithm)")
-        .def(py::init<py::array_t<std::uint8_t> &, py::array_t<double> &, int, int, double>())
-        .def("decode", &BeliefPropagation::decode, u8R"(
+        .def(py::init<py::array_t<std::uint8_t> &, py::array_t<double> &, int, int, double>(),"parity_check_matrix"_a, "prior_probs"_a, "max_iter"_a, "method"_a, "scale"_a)
+        .def("decode", &BeliefPropagation::decode, "syndromes"_a, u8R"(
         Decode a syndrome vector.
         Args:
             syndromes: A numpy array of syndrome bits.
